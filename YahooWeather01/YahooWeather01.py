@@ -1,6 +1,59 @@
 # -*- coding: utf-8 -*- 
 
 import wx
+import re
+import urllib.request
+from bs4 import BeautifulSoup
+
+# アクセスするURL
+url = "https://weather.yahoo.co.jp/weather/jp/13/4410.html"
+ 
+html = urllib.request.urlopen(url)
+soup = BeautifulSoup(html, "html.parser")
+ 
+title_tag = soup.title
+#print(title_tag.string)
+ 
+announce = soup.find("p", class_="yjSt yjw_note_h2")
+#print(announce.string)
+ 
+weatherdate = soup.find("p", class_="date")
+#print(weatherdate.string)
+ 
+highTemp = soup.find("li", class_="high")
+highTemp1 = str(highTemp).replace('<li class="high"><em>', '').replace('</em>', '').replace('</li>', '')
+#print("最高気温：" + highTemp1)
+ 
+lowTemp = soup.find("li", class_="low")
+lowTemp1 = str(lowTemp).replace('<li class="low"><em>', '').replace('</em>', '').replace('</li>', '')
+#print("最低気温：" + lowTemp1)
+ 
+precip = soup.find("tr", class_="precip")
+# print(precip)
+precipAll = str(precip)
+ 
+precipList = []
+pointSerch = 0
+ 
+for num in range(4):
+    pointFirst = precipAll.find("<td>",pointSerch)
+    pointLast = precipAll.find("</td>",pointSerch)
+    precipList.append(precipAll[pointFirst+4:pointLast])
+    pointSerch = pointLast + 4
+#print("降水確率：")
+#print(precipList)
+#print("")
+
+divPic = soup.find('div', class_="forecastCity")
+pPic = divPic.find('p', class_="pict")
+imgPic = pPic.find('img')
+weather = imgPic['alt']
+#print("天候：" + weather)
+imgUrl = imgPic['src']
+#print("天気画像URL：")
+#print(imgUrl)
+#print("")
+ 
 
 #--------------------------------------
 #    トップレベルウィンドウクラス
@@ -81,6 +134,12 @@ class WeatherPanel(wx.Panel):
         layout.Add(s_text_04)
         layout.Add(s_text_05)
         layout.Add(s_text_06)
+        s_text_02.SetLabel(title_tag.string)    #地域
+        s_text_04.SetLabel(announce.string)     #発表日時
+        s_text_05.SetLabel(weatherdate.string)  #対象日
+        s_text_06.SetLabel(weather)             #天気予報
+        s_text_08.SetLabel(highTemp1)           #最高気温
+        s_text_09.SetLabel(lowTemp1)            #最低気温
 
         layout.Add(wx.Size(20, 0))
         layout.Add(bitmap01)
@@ -100,9 +159,9 @@ class PrecipPanel1(wx.Panel):
 
         wx.Panel.__init__(self, parent, wx.ID_ANY)
 
-        s_text_11 = wx.StaticText(self, wx.ID_ANY, u"時間帯　：")
-        s_text_12 = wx.StaticText(self, wx.ID_ANY, u" 0-6   |")
-        s_text_13 = wx.StaticText(self, wx.ID_ANY, u" 6-12  |")
+        s_text_11 = wx.StaticText(self, wx.ID_ANY, u"時間帯　：|")
+        s_text_12 = wx.StaticText(self, wx.ID_ANY, u"  0- 6 |")
+        s_text_13 = wx.StaticText(self, wx.ID_ANY, u"  6-12 |")
         s_text_14 = wx.StaticText(self, wx.ID_ANY, u" 12-18 |")
         s_text_15 = wx.StaticText(self, wx.ID_ANY, u" 18-24 |")
 
@@ -124,7 +183,7 @@ class PrecipPanel2(wx.Panel):
 
         wx.Panel.__init__(self, parent, wx.ID_ANY)
 
-        s_text_16 = wx.StaticText(self, wx.ID_ANY, u"降水確率：")
+        s_text_16 = wx.StaticText(self, wx.ID_ANY, u"降水確率： | ")
         s_text_17 = wx.StaticText(self, wx.ID_ANY, u" ---   |")
         s_text_18 = wx.StaticText(self, wx.ID_ANY, u" 0%    |")
         s_text_19 = wx.StaticText(self, wx.ID_ANY, u" 50%   |")
@@ -137,12 +196,15 @@ class PrecipPanel2(wx.Panel):
         layout.Add(s_text_19)
         layout.Add(s_text_20)
 
+        s_text_17.SetLabel(precipList[0] + "   |  ")    #0-6
+        s_text_18.SetLabel(precipList[1] + "   |  ")    #6-12
+        s_text_19.SetLabel(precipList[2] + "   |  ")    #12-18
+        s_text_20.SetLabel(precipList[3] + "   |  ")    #18-24
+
         self.SetSizer(layout)
 
-
 #--------------------------------------
-#    カスタムフレームを初期化して
-#    アプリケーションを開始
+#    フレームを初期化してアプリを開始
 #--------------------------------------
 if __name__ == "__main__":
 
